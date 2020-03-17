@@ -3,12 +3,26 @@ from flask import Flask, abort, jsonify, request
 from flask_cors import CORS
 
 import MeCab
+import re
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/mecab/*": {"origins": "*"}})
 
 messages = ['Success', 'Faild']
 
+edict = {}
+def parse_edict():
+    src = '/usr/local/lib/edict'
+
+    regex = r"([^\\s]+) \[([^\\s]+)\] \/\((.*)\) (.*)"
+
+    with open(src, 'r', encoding="euc-jp") as f:
+        for line in f:
+            m = re.match(regex, line)
+
+            if m:
+                key = m.group(1)
+                edict[key] = m.group(4) #{ '読み': m.group(2), 'Meaning': m.group(3) }
 
 @app.route('/mecab/v1/parse-ipadic', methods=['POST'])
 def parse():
@@ -51,10 +65,19 @@ def mecab_parse(sentence, dic='ipadic'):
     m = MeCab.Tagger('-d ' + dic_dir + dic_name)
 
     # 出力フォーマット（デフォルト）
-    format = ['表層形', '品詞', '品詞細分類1', '品詞細分類2', '品詞細分類3', '活用形', '活用型','原型','読み','発音']
+    format = ['原型','読み','発音', '意味']
 
-    return [dict(zip(format, (lambda x: [x[0]]+x[1].split(','))(p.split('\t')))) for p in m.parse(sentence).split('\n')[:-2]]
+    result = []
+    for p in m.parse(sentence).split('\n')[:-2]:
+        x = p.split('\t')
+        x = [x[0]] + x[1].split(',')
+        
+        if x[0] in edict:
+            result.append(dict(zip(format, [x[0], x[8], x[9], edict[x[0]]])))
+
+    return result
 
 
 if __name__ == '__main__':
+    parse_edict()
     app.run(host='0.0.0.0', port=5000, debug=True)

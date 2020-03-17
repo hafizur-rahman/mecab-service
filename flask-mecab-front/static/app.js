@@ -48,7 +48,7 @@ var mecab = Vue.extend({
                 selected: "parse-ipadic",
                 message: "",
                 results: null,
-                columns: ["原型", "品詞", "品詞細分類1", "活用型", "活用形", "発音", "読み"]
+                columns: ["原型","読み","発音", "意味"]
             }
         },
         methods: {

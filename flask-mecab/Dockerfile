@@ -24,8 +24,14 @@ RUN git clone --depth 1 https://github.com/neologd/mecab-ipadic-neologd.git
 WORKDIR /opt/mecab-ipadic-neologd
 RUN ./bin/install-mecab-ipadic-neologd -n -y
 
+RUN curl http://ftp.monash.edu/pub/nihongo/edict.gz -o /tmp/edict.gz
+
 COPY . /opt/api
 WORKDIR /opt/api
 RUN pip3 install -r requirements.txt
+
+ENV PYTHONIOENCODING utf-8
+
+RUN gunzip /tmp/edict.gz && cp /tmp/edict /usr/local/lib/
 
 CMD ["python3", "server.py"]
